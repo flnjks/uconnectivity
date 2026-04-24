@@ -36,9 +36,4 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 include(":shared-api")
 include(":server")
 include(":shared")
-include(":desktopApp")
-
-// Gate mobile modules on SDK availability so the JVM-only builds work out of the box.
-if (System.getenv("ANDROID_HOME") != null || rootDir.resolve("local.properties").exists()) {
-    include(":androidApp")
-}
+include(":composeApp")
