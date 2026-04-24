@@ -1,0 +1,54 @@
+CREATE TABLE IF NOT EXISTS Run (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    started_at INTEGER NOT NULL,
+    duration_ms INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'PENDING',           -- PENDING | SENT
+    attempts INTEGER NOT NULL DEFAULT 0,
+    next_attempt_at INTEGER NOT NULL DEFAULT 0,
+    avg_latency_ms REAL,
+    loss_pct REAL,
+    down_mbps REAL,
+    up_mbps REAL,
+    json TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_run_started_at ON Run(started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_run_status ON Run(status);
+
+insertRun:
+INSERT INTO Run(started_at, duration_ms, avg_latency_ms, loss_pct, down_mbps, up_mbps, json)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+lastInsertedId:
+SELECT last_insert_rowid();
+
+recentRuns:
+SELECT *
+FROM Run
+ORDER BY started_at DESC
+LIMIT :limit;
+
+latestRun:
+SELECT *
+FROM Run
+ORDER BY started_at DESC
+LIMIT 1;
+
+pendingCount:
+SELECT COUNT(*) AS c FROM Run WHERE status = 'PENDING';
+
+nextPending:
+SELECT *
+FROM Run
+WHERE status = 'PENDING' AND next_attempt_at <= :now
+ORDER BY started_at ASC
+LIMIT 1;
+
+markSent:
+UPDATE Run SET status = 'SENT', attempts = attempts + 1 WHERE id = :id;
+
+markFailedAttempt:
+UPDATE Run SET attempts = attempts + 1, next_attempt_at = :next WHERE id = :id;
+
+deleteOlderThan:
+DELETE FROM Run WHERE started_at < :cutoff;

@@ -17,6 +17,10 @@ if (hasAndroidSdk) {
 kotlin {
     jvmToolchain(21)
 
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+
     jvm()
     if (hasAndroidSdk) {
         androidTarget {
