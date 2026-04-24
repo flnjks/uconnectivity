@@ -1,0 +1,48 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/**/build/
+!**/src/**/.gradle/
+
+# IDE
+.idea/
+*.iml
+.fleet/
+.vscode/
+.kotlin/
+
+# Kotlin/Native
+*.klib
+*.kexe
+
+# macOS
+.DS_Store
+
+# Xcode / iOS
+iosApp/Pods/
+iosApp/Podfile.lock
+iosApp/*.xcworkspace/xcuserdata/
+iosApp/iosApp.xcodeproj/xcuserdata/
+iosApp/iosApp.xcodeproj/project.xcworkspace/xcuserdata/
+xcuserdata/
+*.xcuserstate
+DerivedData/
+
+# Android
+local.properties
+*.apk
+*.aab
+*.keystore
+
+# Server runtime
+server/data/
+*.sqlite
+*.sqlite-journal
+*.db
+
+# Env / secrets
+.env
+.env.local
+*.pem
+*.key
