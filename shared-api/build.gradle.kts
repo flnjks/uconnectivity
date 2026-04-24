@@ -1,15 +1,23 @@
+val hasAndroidSdk = System.getenv("ANDROID_HOME") != null ||
+    rootProject.file("local.properties").exists()
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.android.library)
+}
+
+if (hasAndroidSdk) {
+    apply(plugin = libs.plugins.android.library.get().pluginId)
 }
 
 kotlin {
     jvmToolchain(21)
 
     jvm()
-    androidTarget {
-        publishLibraryVariants("release")
+    if (hasAndroidSdk) {
+        androidTarget {
+            publishLibraryVariants("release")
+        }
     }
     iosArm64()
     iosSimulatorArm64()
@@ -23,14 +31,16 @@ kotlin {
     }
 }
 
-android {
-    namespace = "app.ucon.api"
-    compileSdk = 35
-    defaultConfig {
-        minSdk = 26
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+if (hasAndroidSdk) {
+    extensions.configure<com.android.build.gradle.LibraryExtension>("android") {
+        namespace = "app.ucon.api"
+        compileSdk = 35
+        defaultConfig {
+            minSdk = 26
+        }
+        compileOptions {
+            sourceCompatibility = JavaVersion.VERSION_21
+            targetCompatibility = JavaVersion.VERSION_21
+        }
     }
 }

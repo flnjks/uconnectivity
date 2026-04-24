@@ -1,18 +1,6 @@
 package app.ucon.config
 
-import kotlinx.cinterop.BetaInteropApi
-import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.allocArrayOf
-import kotlinx.cinterop.memScoped
-import kotlinx.cinterop.refTo
-import platform.Foundation.NSData
-import platform.Foundation.NSString
 import platform.Foundation.NSUserDefaults
-import platform.Foundation.NSUTF8StringEncoding
-import platform.Foundation.create
-import platform.Foundation.dataUsingEncoding
-import platform.Foundation.NSData
-import platform.darwin.OSStatus
 
 actual class SettingsStore {
     private val defaults = NSUserDefaults.standardUserDefaults
@@ -20,7 +8,7 @@ actual class SettingsStore {
     actual fun load(): AppSettings = AppSettings(
         siteId = defaults.stringForKey("siteId").orEmpty(),
         serverBaseUrl = defaults.stringForKey("serverBaseUrl").orEmpty(),
-        intervalMinutes = (defaults.integerForKey("intervalMinutes").toInt()).takeIf { it > 0 } ?: 60,
+        intervalMinutes = defaults.integerForKey("intervalMinutes").toInt().takeIf { it > 0 } ?: 60,
         speedTestEnabled = if (defaults.objectForKey("speedTestEnabled") == null) true
                            else defaults.boolForKey("speedTestEnabled"),
     )
