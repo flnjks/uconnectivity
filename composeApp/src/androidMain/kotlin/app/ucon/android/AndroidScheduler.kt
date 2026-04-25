@@ -8,10 +8,8 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.delay
 import java.util.concurrent.TimeUnit
-import kotlin.coroutines.resume
-import kotlin.time.Duration.Companion.seconds
 
 private const val WORK_NAME = "app.ucon.periodic"
 
@@ -39,25 +37,12 @@ object AndroidScheduler {
 class MeasurementWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
     override suspend fun doWork(): Result {
         val vm = UconApplication.viewModel
-        // Kick off a run; wait for the running flag to clear so WorkManager knows we finished.
         vm.runNow()
-        waitForRunToFinish(vm.scope)
-        return Result.success()
-    }
-
-    private suspend fun waitForRunToFinish(@Suppress("UNUSED_PARAMETER") scope: kotlinx.coroutines.CoroutineScope) {
-        // Poll the running state with a modest ceiling; we don't want to hold the worker forever.
-        val deadline = System.currentTimeMillis() + 60.seconds.inWholeMilliseconds
-        while (UconApplication.viewModel.state.value.running &&
-            System.currentTimeMillis() < deadline
-        ) {
-            suspendCancellableCoroutine<Unit> { cont ->
-                val t = kotlinx.coroutines.GlobalScope.launch {
-                    kotlinx.coroutines.delay(500)
-                    cont.resume(Unit)
-                }
-                cont.invokeOnCancellation { t.cancel() }
-            }
+        // Wait for the run to clear, with a 60s ceiling so WorkManager isn't held forever.
+        val deadline = System.currentTimeMillis() + 60_000L
+        while (vm.state.value.running && System.currentTimeMillis() < deadline) {
+            delay(500)
         }
+        return Result.success()
     }
 }
