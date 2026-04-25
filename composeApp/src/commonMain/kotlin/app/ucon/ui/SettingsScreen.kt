@@ -63,6 +63,16 @@ fun SettingsScreen(
             Switch(checked = speedTest, onCheckedChange = { speedTest = it })
             Text("  Run speed test (uses ~10 MB per hour)", style = MaterialTheme.typography.bodyMedium)
         }
+        Text(
+            buildString {
+                append("Speed test endpoint: ")
+                append(
+                    if (serverBaseUrl.isNotBlank() && state.tokenPresent) "your server"
+                    else "speed.cloudflare.com (fallback)"
+                )
+            },
+            style = MaterialTheme.typography.bodySmall,
+        )
 
         OutlinedTextField(
             value = tokenInput,

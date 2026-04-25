@@ -47,9 +47,14 @@ class MeasurementRun(
         }.awaitAll()
 
         val speed: SpeedReport? = if (config.speedTestEnabled) {
-            runCatching {
-                speedProbe.measure(config.serverBaseUrl, config.token, config.speedTestBytes)
-            }.getOrNull()
+            // Use the configured ingest server when available; fall back to the public
+            // Cloudflare endpoints so speeds still measure before any server is provisioned.
+            val endpoint = if (config.serverBaseUrl.isNotBlank() && config.token.isNotBlank()) {
+                SpeedEndpoint.IngestServer(config.serverBaseUrl, config.token)
+            } else {
+                SpeedEndpoint.Cloudflare
+            }
+            runCatching { speedProbe.measure(endpoint, config.speedTestBytes) }.getOrNull()
         } else null
 
         val durationMs = mark.elapsedNow().inWholeMilliseconds
