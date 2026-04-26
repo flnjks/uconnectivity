@@ -13,6 +13,7 @@ import app.ucon.measure.SpeedProbe
 import app.ucon.net.newHttpClient
 import app.ucon.surface.SurfaceBridge
 import app.ucon.ui.AppViewModel
+import androidx.glance.appwidget.updateAll
 
 class UconApplication : Application(), Configuration.Provider {
 
@@ -38,9 +39,10 @@ class UconApplication : Application(), Configuration.Provider {
         )
 
         // Glance is wired in the widget package; passing the updater here as a lambda
-        // keeps :shared free of androidx.glance dependencies. Until the widget lands
-        // in this commit pass, the updater is a no-op.
-        val surfaceBridge = SurfaceBridge(this) { /* widget added in next commit */ }
+        // keeps :shared free of androidx.glance dependencies.
+        val surfaceBridge = SurfaceBridge(this) { ctx ->
+            app.ucon.android.widget.UconGlanceWidget().updateAll(ctx)
+        }
 
         viewModel = AppViewModel(
             repo = repo,
