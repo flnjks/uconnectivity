@@ -47,3 +47,8 @@ server/data/
 .env.local
 *.pem
 *.key
+
+# Swift Package build artifacts
+desktop-helper-macos/.build/
+desktop-helper-macos/.swiftpm/
+

@@ -12,17 +12,17 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberTrayState
-import app.ucon.api.LastRunSummary
-import app.ucon.api.RunStatus
-import app.ucon.ui.toFixed
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.launch
+import java.io.File
+
+private val IS_MACOS: Boolean = System.getProperty("os.name").lowercase().contains("mac")
 
 fun main() = application {
     val vm = AppContainer.viewModel
     val bridge = AppContainer.surfaceBridge
 
-    val latest by bridge.latest.collectAsState()
-    val recent by bridge.recent.collectAsState()
-    val state by vm.state.collectAsState()
+    var settingsOpen by remember { mutableStateOf(false) }
 
     val scheduler = remember {
         DesktopScheduler(
@@ -32,52 +32,79 @@ fun main() = application {
     }
     LaunchedEffect(Unit) { scheduler.start(vm.scope) }
 
-    var settingsOpen by remember { mutableStateOf(false) }
-    val trayState = rememberTrayState()
-
-    Tray(
-        icon = rememberVectorPainter(Icons.Filled.NetworkCheck),
-        state = trayState,
-        tooltip = headerLine(latest, state.running),
-        menu = {
-            Item(headerLine(latest, state.running), enabled = false, onClick = {})
-
-            if (recent.isNotEmpty()) {
-                Menu("Recent runs") {
-                    recent.forEach { row ->
-                        Item(text = formatRecentRow(row), enabled = false, onClick = {})
-                    }
+    val helper: File? = remember { if (IS_MACOS) locateMacHelper() else null }
+    val statusBar: MacStatusBar? = remember(helper) {
+        helper?.let {
+            MacStatusBar(helperPath = it) { menuItemId ->
+                when (menuItemId) {
+                    "run" -> vm.runNow()
+                    "settings" -> settingsOpen = true
+                    "quit" -> exitApplication()
                 }
             }
+        }
+    }
 
-            Item("Run test now", enabled = !state.running, onClick = vm::runNow)
-            Item("Settings…", onClick = { settingsOpen = true })
-            Item("Quit", onClick = ::exitApplication)
-        },
-    )
+    LaunchedEffect(statusBar) {
+        statusBar?.start(vm.scope)
+    }
+
+    LaunchedEffect(statusBar) {
+        if (statusBar != null) {
+            combine(bridge.latest, bridge.recent, vm.state) { l, r, s -> Triple(l, r, s.running) }
+                .collect { (latest, recent, running) -> statusBar.update(latest, recent, running) }
+        }
+    }
+
+    // Always render the Compose tray as a fallback; on macOS the Swift helper takes
+    // visual primacy (NSStatusItem text in the menu bar), but the AWT tray stays
+    // around as a click target if the helper crashes.
+    if (statusBar == null) {
+        val latest by bridge.latest.collectAsState()
+        val recent by bridge.recent.collectAsState()
+        val state by vm.state.collectAsState()
+
+        Tray(
+            icon = rememberVectorPainter(Icons.Filled.NetworkCheck),
+            state = rememberTrayState(),
+            tooltip = headerLine(latest, state.running),
+            menu = {
+                Item(headerLine(latest, state.running), enabled = false, onClick = {})
+                if (recent.isNotEmpty()) {
+                    Menu("Recent runs") {
+                        recent.forEach { row ->
+                            Item(text = formatRecentRow(row), enabled = false, onClick = {})
+                        }
+                    }
+                }
+                Item("Run test now", enabled = !state.running, onClick = vm::runNow)
+                Item("Settings…", onClick = { settingsOpen = true })
+                Item("Quit", onClick = ::exitApplication)
+            },
+        )
+    }
 
     if (settingsOpen) {
         SettingsWindow(vm = vm, onClose = { settingsOpen = false })
     }
 }
 
-private fun headerLine(latest: LastRunSummary?, running: Boolean): String {
-    if (running) return "uConnectivity · running…"
-    if (latest == null) return "uConnectivity · — / — Mbps"
-    val pill = when (latest.status) {
-        RunStatus.Good -> "✓"
-        RunStatus.Warn -> "!"
-        RunStatus.Bad -> "✕"
-    }
-    val down = latest.downMbps?.toFixed(0) ?: "—"
-    val up = latest.upMbps?.toFixed(0) ?: "—"
-    return "$pill $down/$up Mbps"
-}
+private fun locateMacHelper(): File? {
+    // 1. Bundled into the Compose .app under Contents/Resources/uconnectivity-statusbar.
+    System.getProperty("compose.application.resources.dir")
+        ?.let { File(it, "uconnectivity-statusbar") }
+        ?.takeIf { it.canExecute() }
+        ?.let { return it }
 
-private fun formatRecentRow(row: LastRunSummary): String {
-    val down = row.downMbps?.toFixed(0) ?: "—"
-    val up = row.upMbps?.toFixed(0) ?: "—"
-    val lat = row.avgLatencyMs?.toFixed(0) ?: "—"
-    val ts = row.ts.toString().substringBefore('.').replace('T', ' ')
-    return "$ts  ↓$down ↑$up  ${lat}ms"
+    // 2. Local Swift Package build (development).
+    val cwd = File("desktop-helper-macos/.build/arm64-apple-macosx/release/uconnectivity-statusbar")
+    if (cwd.canExecute()) return cwd
+
+    // 3. Override via env for ad-hoc testing.
+    System.getenv("UCON_STATUSBAR_HELPER")
+        ?.let { File(it) }
+        ?.takeIf { it.canExecute() }
+        ?.let { return it }
+
+    return null
 }

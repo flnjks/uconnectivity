@@ -77,6 +77,16 @@ kotlin {
     }
 }
 
+// Build the macOS Swift helper executable that owns NSStatusItem.
+// Skipped on non-macOS hosts.
+val buildMacStatusBarHelper by tasks.registering(Exec::class) {
+    onlyIf { System.getProperty("os.name").lowercase().contains("mac") }
+    workingDir = rootDir.resolve("desktop-helper-macos")
+    commandLine("swift", "build", "-c", "release")
+    inputs.files(fileTree(workingDir) { include("Package.swift", "Sources/**") })
+    outputs.file(workingDir.resolve(".build/arm64-apple-macosx/release/uconnectivity-statusbar"))
+}
+
 compose.desktop {
     application {
         mainClass = "app.ucon.desktop.MainKt"
@@ -85,9 +95,26 @@ compose.desktop {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "uConnectivity"
             packageVersion = "1.0.0"
+
+            // Bundle the Swift helper into the .app under Contents/Resources/.
+            // Compose Desktop exposes `appResourcesRootDir` for this purpose.
+            macOS {
+                appResourcesRootDir.set(rootDir.resolve("desktop-helper-macos/.build/macos-app-resources"))
+            }
         }
     }
 }
+
+// Stage the helper into the app-resources dir Compose Desktop reads from.
+val stageMacAppResources by tasks.registering(Copy::class) {
+    onlyIf { System.getProperty("os.name").lowercase().contains("mac") }
+    dependsOn(buildMacStatusBarHelper)
+    from(rootDir.resolve("desktop-helper-macos/.build/arm64-apple-macosx/release/uconnectivity-statusbar"))
+    into(rootDir.resolve("desktop-helper-macos/.build/macos-app-resources/macos"))
+}
+
+tasks.matching { it.name == "prepareAppResources" || it.name == "run" }
+    .configureEach { dependsOn(stageMacAppResources) }
 
 if (hasAndroidSdk) {
     extensions.configure<com.android.build.gradle.internal.dsl.BaseAppModuleExtension>("android") {
