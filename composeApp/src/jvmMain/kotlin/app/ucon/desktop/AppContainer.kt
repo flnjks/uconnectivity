@@ -9,6 +9,7 @@ import app.ucon.measure.MeasurementRun
 import app.ucon.measure.Probes
 import app.ucon.measure.SpeedProbe
 import app.ucon.net.newHttpClient
+import app.ucon.surface.SurfaceBridge
 import app.ucon.ui.AppViewModel
 import io.ktor.client.HttpClient
 import java.io.File
@@ -35,6 +36,8 @@ object AppContainer {
         tokenProvider = { secureStore.getToken() },
     )
 
+    val surfaceBridge = SurfaceBridge()
+
     val viewModel = AppViewModel(
         repo = repo,
         measurement = measurement,
@@ -42,6 +45,7 @@ object AppContainer {
         settingsStore = settingsStore,
         secureStore = secureStore,
         httpClient = httpClient,
+        surface = surfaceBridge,
         clientVersion = CLIENT_VERSION,
     )
 }

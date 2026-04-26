@@ -1,5 +1,6 @@
 package app.ucon.ui
 
+import app.ucon.api.LastRunSummary
 import app.ucon.api.RunReport
 import app.ucon.config.AppSettings
 import app.ucon.config.SecureStore
@@ -7,16 +8,17 @@ import app.ucon.config.SettingsStore
 import app.ucon.data.Run
 import app.ucon.data.RunRepository
 import app.ucon.data.UploadQueue
+import app.ucon.data.toLastRunSummary
 import app.ucon.measure.MeasurementRun
 import app.ucon.measure.RunConfig
 import app.ucon.measure.Target
+import app.ucon.surface.SurfaceBridge
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
@@ -26,6 +28,7 @@ data class UiState(
     val settings: AppSettings = AppSettings(),
     val tokenPresent: Boolean = false,
     val latest: Run? = null,
+    val latestSummary: LastRunSummary? = null,
     val recent: List<Run> = emptyList(),
     val pendingUploads: Long = 0,
     val running: Boolean = false,
@@ -34,6 +37,10 @@ data class UiState(
 /**
  * App-wide view model. Pure Kotlin — no Compose types here so platform
  * entry points can reuse it (e.g. Android Service, iOS SceneDelegate).
+ *
+ * On every DB change (insert from a run completion, or anything else)
+ * pushes a [LastRunSummary] + recent-list out via [SurfaceBridge] so the
+ * macOS menu bar / Windows tray / Android+iOS widgets refresh in lockstep.
  */
 class AppViewModel(
     private val repo: RunRepository,
@@ -42,6 +49,7 @@ class AppViewModel(
     private val settingsStore: SettingsStore,
     private val secureStore: SecureStore,
     private val httpClient: HttpClient,
+    private val surface: SurfaceBridge,
     val clientVersion: String,
     parentScope: CoroutineScope? = null,
 ) {
@@ -55,19 +63,29 @@ class AppViewModel(
         _settings,
         _tokenPresent,
         repo.latest(),
-        repo.recent(50),
+        repo.recent(10),
         repo.pendingCount(),
         _running,
     ) { arr ->
+        val latestRun = arr[2] as Run?
+        val recentRuns = @Suppress("UNCHECKED_CAST") (arr[3] as List<Run>)
+        val siteLabel = (arr[0] as AppSettings).siteId
         UiState(
             settings = arr[0] as AppSettings,
             tokenPresent = arr[1] as Boolean,
-            latest = arr[2] as Run?,
-            recent = @Suppress("UNCHECKED_CAST") (arr[3] as List<Run>),
+            latest = latestRun,
+            latestSummary = latestRun?.toLastRunSummary(siteLabel),
+            recent = recentRuns,
             pendingUploads = arr[4] as Long,
             running = arr[5] as Boolean,
         )
-    }.stateIn(scope, kotlinx.coroutines.flow.SharingStarted.Eagerly, UiState())
+    }
+        .onEach { ui ->
+            // Republish to platform surfaces every time the DB or settings change.
+            val recentSummaries = ui.recent.map { it.toLastRunSummary(ui.settings.siteId) }
+            surface.publishLatest(ui.latestSummary, recentSummaries)
+        }
+        .stateIn(scope, kotlinx.coroutines.flow.SharingStarted.Eagerly, UiState())
 
     init {
         uploadQueue.start(scope)

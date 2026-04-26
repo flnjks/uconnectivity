@@ -1,11 +1,18 @@
 package app.ucon.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -17,9 +24,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import app.ucon.api.LastRunSummary
+import app.ucon.api.RunStatus
 import app.ucon.config.AppSettings
 
 @Composable
@@ -27,6 +37,7 @@ fun SettingsScreen(
     state: UiState,
     onUpdateSettings: (AppSettings) -> Unit,
     onSetToken: (String?) -> Unit,
+    onRunNow: () -> Unit,
 ) {
     var siteId by remember(state.settings.siteId) { mutableStateOf(state.settings.siteId) }
     var serverBaseUrl by remember(state.settings.serverBaseUrl) { mutableStateOf(state.settings.serverBaseUrl) }
@@ -34,8 +45,11 @@ fun SettingsScreen(
     var speedTest by remember(state.settings.speedTestEnabled) { mutableStateOf(state.settings.speedTestEnabled) }
     var tokenInput by remember { mutableStateOf("") }
 
-    SectionTitle("Settings")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+        LastRunCard(state.latestSummary, state.running, onRunNow)
+
+        SectionTitle("Settings")
+
         OutlinedTextField(
             value = siteId,
             onValueChange = { siteId = it },
@@ -118,3 +132,55 @@ fun SettingsScreen(
         )
     }
 }
+
+@Composable
+private fun LastRunCard(latest: LastRunSummary?, running: Boolean, onRunNow: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (latest == null) {
+                Text("No runs yet", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Tap \"Run test now\" — speed test runs against speed.cloudflare.com " +
+                        "until a server URL + token are saved.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    StatusDot(latest.status)
+                    Text(
+                        "  ${formatMbps(latest.downMbps)} ↓  ${formatMbps(latest.upMbps)} ↑",
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
+                Text(
+                    "${formatMs(latest.avgLatencyMs)} latency · ${formatPct(latest.lossPct)} loss",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Button(onClick = onRunNow, enabled = !running) {
+                    Text(if (running) "Running…" else "Run test now")
+                }
+                if (running) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp).padding(start = 12.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusDot(status: RunStatus) {
+    val color = when (status) {
+        RunStatus.Good -> Color(0xFF2E7D32)
+        RunStatus.Warn -> Color(0xFFF9A825)
+        RunStatus.Bad -> Color(0xFFC62828)
+    }
+    Box(modifier = Modifier.size(12.dp).background(color, CircleShape))
+}
+
+internal fun formatMs(v: Double?): String = v?.let { "${it.toFixed(0)} ms" } ?: "—"
+internal fun formatPct(v: Double?): String = v?.let { "${it.toFixed(1)}%" } ?: "—"
+internal fun formatMbps(v: Double?): String = v?.let { "${it.toFixed(1)} Mbps" } ?: "—"
