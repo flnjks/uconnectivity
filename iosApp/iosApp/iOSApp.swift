@@ -1,5 +1,6 @@
 import SwiftUI
 import BackgroundTasks
+import WidgetKit
 import ComposeApp
 
 let REFRESH_TASK_ID = "app.ucon.refresh"
@@ -30,6 +31,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        // Kotlin/Native has no WidgetKit cinterop — the SurfaceBridge writes JSON
+        // into the App Group container and then calls back into Swift to ask the
+        // WidgetCenter to refresh.
+        AppContainer_iosKt.widgetReloader = {
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+
         BGTaskScheduler.shared.register(
             forTaskWithIdentifier: REFRESH_TASK_ID,
             using: nil

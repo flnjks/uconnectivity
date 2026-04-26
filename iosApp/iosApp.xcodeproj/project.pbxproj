@@ -8,12 +8,43 @@
 
 /* Begin PBXBuildFile section */
 		307C2654CD5972A25FB7FD87 /* iOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 668CECA83ACC03A83C85A623 /* iOSApp.swift */; };
+		A8B0DDD739AEE506D3948977 /* iosWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = DF5127E653CCA11EF801DED3 /* iosWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		EE7B4021009309C3DCB8C491 /* UconWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB421B40488A182B5B37EFB5 /* UconWidget.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		554851E85CE0FB61A183A0E7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 242FB5348943441C388468CE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A0E604B9972333A518E858D3;
+			remoteInfo = iosWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		E99160E501832DB2CECE6CFF /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A8B0DDD739AEE506D3948977 /* iosWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		668CECA83ACC03A83C85A623 /* iOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSApp.swift; sourceTree = "<group>"; };
+		70C66B9E2097E040F3FAACC4 /* iosWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = iosWidget.entitlements; sourceTree = "<group>"; };
 		86038AE1032E284E79B32AD6 /* iosApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B1A4E7253E9F277A5BE5EFF2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		BB421B40488A182B5B37EFB5 /* UconWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UconWidget.swift; sourceTree = "<group>"; };
 		C117AD187833E2513BD2F553 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		C49B0B02429FBBC9F867DDE1 /* iosApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = iosApp.entitlements; sourceTree = "<group>"; };
+		DF5127E653CCA11EF801DED3 /* iosWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = iosWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -21,6 +52,7 @@
 			isa = PBXGroup;
 			children = (
 				C117AD187833E2513BD2F553 /* Info.plist */,
+				C49B0B02429FBBC9F867DDE1 /* iosApp.entitlements */,
 				668CECA83ACC03A83C85A623 /* iOSApp.swift */,
 			);
 			path = iosApp;
@@ -30,6 +62,7 @@
 			isa = PBXGroup;
 			children = (
 				1DB4B685CAEE8BEFEBBAEF94 /* iosApp */,
+				E646C8B270E1AFDD3D53C7BD /* iosWidget */,
 				94C98B8B3A2BFC1966447269 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -38,8 +71,19 @@
 			isa = PBXGroup;
 			children = (
 				86038AE1032E284E79B32AD6 /* iosApp.app */,
+				DF5127E653CCA11EF801DED3 /* iosWidget.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		E646C8B270E1AFDD3D53C7BD /* iosWidget */ = {
+			isa = PBXGroup;
+			children = (
+				B1A4E7253E9F277A5BE5EFF2 /* Info.plist */,
+				70C66B9E2097E040F3FAACC4 /* iosWidget.entitlements */,
+				BB421B40488A182B5B37EFB5 /* UconWidget.swift */,
+			);
+			path = iosWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -51,10 +95,12 @@
 			buildPhases = (
 				C263BE7E68B1B2B41CE2771C /* Build Kotlin framework */,
 				297B59D9CE634556D6007C40 /* Sources */,
+				E99160E501832DB2CECE6CFF /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				4FB9A6E93492875420854F0F /* PBXTargetDependency */,
 			);
 			name = iosApp;
 			packageProductDependencies = (
@@ -62,6 +108,23 @@
 			productName = iosApp;
 			productReference = 86038AE1032E284E79B32AD6 /* iosApp.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A0E604B9972333A518E858D3 /* iosWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 04443B84451A50B5A29010C0 /* Build configuration list for PBXNativeTarget "iosWidget" */;
+			buildPhases = (
+				088DF756DDA308FC4F703BC0 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = iosWidget;
+			packageProductDependencies = (
+			);
+			productName = iosWidget;
+			productReference = DF5127E653CCA11EF801DED3 /* iosWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -89,6 +152,7 @@
 			projectRoot = "";
 			targets = (
 				78B53CC79860CBFC2F5543C6 /* iosApp */,
+				A0E604B9972333A518E858D3 /* iosWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -116,6 +180,14 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		088DF756DDA308FC4F703BC0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EE7B4021009309C3DCB8C491 /* UconWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		297B59D9CE634556D6007C40 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -125,6 +197,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		4FB9A6E93492875420854F0F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A0E604B9972333A518E858D3 /* iosWidget */;
+			targetProxy = 554851E85CE0FB61A183A0E7 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		11814011E7D6EC822BFBC66D /* Release */ = {
@@ -248,10 +328,29 @@
 			};
 			name = Debug;
 		};
+		77E546CD026526AB30D83D0A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = iosWidget/iosWidget.entitlements;
+				INFOPLIST_FILE = iosWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.ucon.iosApp.widget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		9221A1FDC06803E8A2FC6E61 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = iosApp/iosApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -277,10 +376,29 @@
 			};
 			name = Debug;
 		};
+		99C10D33C17662C6F5E75571 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = iosWidget/iosWidget.entitlements;
+				INFOPLIST_FILE = iosWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.ucon.iosApp.widget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 		AF835BFF1220CA5AB5B867E4 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = iosApp/iosApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -309,6 +427,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		04443B84451A50B5A29010C0 /* Build configuration list for PBXNativeTarget "iosWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				99C10D33C17662C6F5E75571 /* Debug */,
+				77E546CD026526AB30D83D0A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		29DCA9F0B3A40325067EB163 /* Build configuration list for PBXNativeTarget "iosApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

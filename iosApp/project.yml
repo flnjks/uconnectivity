@@ -18,6 +18,9 @@ targets:
     deploymentTarget: "16.0"
     sources:
       - path: iosApp
+    dependencies:
+      - target: iosWidget
+        embed: true
     info:
       path: iosApp/Info.plist
       properties:
@@ -33,6 +36,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.ucon.iosApp
         TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_ENTITLEMENTS: iosApp/iosApp.entitlements
         FRAMEWORK_SEARCH_PATHS:
           - "$(inherited)"
           - "$(SRCROOT)/../composeApp/build/bin/$(KMP_TARGET)/debugFramework"
@@ -54,3 +58,24 @@ targets:
             iphoneos)        ./gradlew :composeApp:linkDebugFrameworkIosArm64 ;;
           esac
         basedOnDependencyAnalysis: false
+
+  iosWidget:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: iosWidget
+    info:
+      path: iosWidget/Info.plist
+      properties:
+        CFBundleDisplayName: uConnectivity
+        CFBundleShortVersionString: "1.0.0"
+        CFBundleVersion: "1"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.ucon.iosApp.widget
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_ENTITLEMENTS: iosWidget/iosWidget.entitlements
+        SKIP_INSTALL: "YES"
