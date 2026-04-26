@@ -62,7 +62,7 @@ class UconGlanceWidget : GlanceAppWidget() {
         ) {
             Column {
                 Text(
-                    text = if (latest == null) "uConnectivity" else "${pill(latest.status)}  ${formatPair(latest)}",
+                    text = if (latest == null) "uConnectivity" else formatPair(latest),
                     style = TextStyle(color = androidx.glance.color.ColorProvider(day = fg, night = fg), fontSize = 16.sp, fontWeight = FontWeight.Bold),
                 )
                 Spacer(GlanceModifier.height(4.dp))
@@ -73,12 +73,6 @@ class UconGlanceWidget : GlanceAppWidget() {
             }
         }
     }
-}
-
-private fun pill(s: RunStatus): String = when (s) {
-    RunStatus.Good -> "✓"
-    RunStatus.Warn -> "!"
-    RunStatus.Bad -> "✕"
 }
 
 private fun statusColors(s: RunStatus): Pair<Color, Color> = when (s) {

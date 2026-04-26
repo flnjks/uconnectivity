@@ -71,24 +71,15 @@ struct UconWidgetEntryView: View {
 
     private func headerLine(_ s: UconStatusSummary?) -> String {
         guard let s = s else { return "uConnectivity" }
-        let pill = pillFor(s.status)
         let down = s.downMbps.map { String(format: "%.0f", $0) } ?? "—"
         let up = s.upMbps.map { String(format: "%.0f", $0) } ?? "—"
-        return "\(pill) \(down)↓ / \(up)↑ Mbps"
+        return "\(down)↓ / \(up)↑ Mbps"
     }
     private func subLine(_ s: UconStatusSummary?) -> String {
         guard let s = s else { return "tap to set up" }
         let lat = s.avgLatencyMs.map { String(format: "%.0f ms", $0) } ?? "—"
         let loss = s.lossPct.map { String(format: "%.1f%%", $0) } ?? "—"
         return "lat \(lat) · loss \(loss)"
-    }
-    private func pillFor(_ status: String) -> String {
-        switch status {
-        case "Good": return "✓"
-        case "Warn": return "!"
-        case "Bad": return "✕"
-        default: return "·"
-        }
     }
     private func background(for status: String?) -> some View {
         let color: Color = {

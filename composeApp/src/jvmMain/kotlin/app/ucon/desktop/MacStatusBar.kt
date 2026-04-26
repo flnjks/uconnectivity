@@ -1,7 +1,6 @@
 package app.ucon.desktop
 
 import app.ucon.api.LastRunSummary
-import app.ucon.api.RunStatus
 import app.ucon.ui.toFixed
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -108,16 +107,11 @@ private data class MenuItemMsg(
 private data class EventMessage(val event: String, val id: String)
 
 internal fun headerLine(latest: LastRunSummary?, running: Boolean): String {
-    if (running) return "uConnectivity · running…"
-    if (latest == null) return "uConnectivity · — / — Mbps"
-    val pill = when (latest.status) {
-        RunStatus.Good -> "✓"
-        RunStatus.Warn -> "!"
-        RunStatus.Bad -> "✕"
-    }
+    if (running) return "running…"
+    if (latest == null) return "— / — Mbps"
     val down = latest.downMbps?.toFixed(0) ?: "—"
     val up = latest.upMbps?.toFixed(0) ?: "—"
-    return "$pill $down/$up Mbps"
+    return "$down/$up Mbps"
 }
 
 internal fun formatRecentRow(row: LastRunSummary): String {
