@@ -111,7 +111,7 @@ internal fun headerLine(latest: LastRunSummary?, running: Boolean): String {
     if (latest == null) return "— / — Mbps"
     val down = latest.downMbps?.toFixed(0) ?: "—"
     val up = latest.upMbps?.toFixed(0) ?: "—"
-    return "$down/$up Mbps"
+    return "$down⮃$up Mbps"
 }
 
 internal fun formatRecentRow(row: LastRunSummary): String {
