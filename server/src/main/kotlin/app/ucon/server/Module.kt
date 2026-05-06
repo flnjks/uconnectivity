@@ -21,6 +21,7 @@ import io.ktor.server.request.receiveStream
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondOutputStream
 import io.ktor.server.response.respondText
+import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
@@ -33,7 +34,32 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.UUID
 import kotlin.random.Random
 
+private fun constantTimeEquals(a: String, b: String): Boolean {
+    val ab = a.toByteArray()
+    val bb = b.toByteArray()
+    if (ab.size != bb.size) return false
+    var diff = 0
+    for (i in ab.indices) diff = diff or (ab[i].toInt() xor bb[i].toInt())
+    return diff == 0
+}
+
 data class SitePrincipal(val siteId: String)
+data class OpsPrincipal(val name: String)
+
+@kotlinx.serialization.Serializable
+data class CreateSiteRequest(val label: String)
+
+@kotlinx.serialization.Serializable
+data class CreateSiteResponse(val siteId: String, val token: String)
+
+@kotlinx.serialization.Serializable
+data class RotateTokenResponse(val siteId: String, val token: String)
+
+@kotlinx.serialization.Serializable
+data class SiteListEntry(val siteId: String, val label: String, val createdAt: Long)
+
+@kotlinx.serialization.Serializable
+data class SiteListResponse(val sites: List<SiteListEntry>)
 
 fun Application.module() {
     install(ContentNegotiation) {
@@ -46,6 +72,9 @@ fun Application.module() {
             call.respond(HttpStatusCode.InternalServerError, IngestAck(accepted = false, error = cause.message))
         }
     }
+    val opsToken: String? = environment.config.propertyOrNull("ucon.opsToken")?.getString()
+        ?: System.getenv("OPS_TOKEN")?.takeIf { it.isNotBlank() }
+
     install(Authentication) {
         bearer("site") {
             authenticate { creds ->
@@ -53,10 +82,52 @@ fun Application.module() {
                 SitePrincipal(siteId)
             }
         }
+        bearer("ops") {
+            authenticate { creds ->
+                if (opsToken == null) return@authenticate null
+                if (constantTimeEquals(creds.token, opsToken)) OpsPrincipal("ops") else null
+            }
+        }
     }
 
     routing {
         get(Api.PATH_HEALTHZ) { call.respondText("ok") }
+
+        authenticate("ops") {
+            // Provision a new site. Body: { "label": "office-1" }. Response includes
+            // the one-time plaintext token; subsequent calls cannot recover it.
+            post("/v1/admin/sites") {
+                val body = call.receive<CreateSiteRequest>()
+                if (body.label.isBlank()) {
+                    call.respond(HttpStatusCode.BadRequest); return@post
+                }
+                val (siteId, token) = Admin.createSite(body.label)
+                call.respond(HttpStatusCode.Created, CreateSiteResponse(siteId, token))
+            }
+
+            // List provisioned sites (no tokens — they're hashed).
+            get("/v1/admin/sites") {
+                val sites = Admin.listSites().map {
+                    SiteListEntry(it.siteId, it.label, it.createdAt)
+                }
+                call.respond(SiteListResponse(sites))
+            }
+
+            // Issue a fresh token for an existing site, replacing the previous one.
+            post("/v1/admin/sites/{siteId}/rotate") {
+                val siteId = call.parameters["siteId"]!!
+                val newToken = Admin.rotateToken(siteId)
+                if (newToken == null) call.respond(HttpStatusCode.NotFound)
+                else call.respond(RotateTokenResponse(siteId, newToken))
+            }
+
+            // Permanent revoke + run deletion.
+            delete("/v1/admin/sites/{siteId}") {
+                val siteId = call.parameters["siteId"]!!
+                if (Admin.deleteSite(siteId)) call.respond(HttpStatusCode.NoContent)
+                else call.respond(HttpStatusCode.NotFound)
+            }
+        }
 
         authenticate("site") {
             post(Api.PATH_STATS) {

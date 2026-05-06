@@ -1,17 +1,23 @@
 package app.ucon.server
 
 import de.mkammerer.argon2.Argon2Factory
+import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import java.security.SecureRandom
 import java.util.Base64
+
+data class SiteRow(val siteId: String, val label: String, val createdAt: Long)
 
 object Admin {
     private val argon2 = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id)
     private val rng = SecureRandom()
 
+    /** Provision a new site. Returns (siteId, plaintext-token). */
     fun createSite(label: String): Pair<String, String> {
         val siteId = label.lowercase()
             .replace(Regex("[^a-z0-9-]"), "-")
@@ -45,6 +51,43 @@ object Admin {
             }
         }
         null
+    }
+
+    /** Lists every provisioned site (no tokens — those are hashed). */
+    fun listSites(): List<SiteRow> = transaction {
+        Sites.selectAll().orderBy(Sites.createdAt, SortOrder.ASC).map {
+            SiteRow(
+                siteId = it[Sites.siteId],
+                label = it[Sites.label],
+                createdAt = it[Sites.createdAt],
+            )
+        }
+    }
+
+    /** Returns the new plaintext token, or null if [siteId] doesn't exist. */
+    fun rotateToken(siteId: String): String? = transaction {
+        val exists = Sites.selectAll().where { Sites.siteId eq siteId }.count() > 0
+        if (!exists) return@transaction null
+        val token = randomToken()
+        val hash = argon2.hash(2, 65536, 1, token.toCharArray())
+        Sites.update({ Sites.siteId eq siteId }) {
+            it[Sites.tokenHash] = hash
+        }
+        token
+    }
+
+    /**
+     * Removes a site and all its runs. Returns true if the site existed.
+     * After this, the site's bearer token will no longer authenticate
+     * (no token rows remain) and all historical run rows for the site
+     * are dropped.
+     */
+    fun deleteSite(siteId: String): Boolean = transaction {
+        val deleted = Sites.deleteWhere { Sites.siteId eq siteId }
+        if (deleted > 0) {
+            Runs.deleteWhere { Runs.siteId eq siteId }
+        }
+        deleted > 0
     }
 
     private fun randomToken(): String {
