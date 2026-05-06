@@ -13,6 +13,17 @@ import java.util.Base64
 
 data class SiteRow(val siteId: String, val label: String, val createdAt: Long)
 
+data class FleetSiteSnapshot(
+    val siteId: String,
+    val label: String,
+    val createdAt: Long,
+    val lastRunAt: Long?,
+    val avgLatencyMs: Double?,
+    val lossPct: Double?,
+    val downMbps: Double?,
+    val upMbps: Double?,
+)
+
 object Admin {
     private val argon2 = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id)
     private val rng = SecureRandom()
@@ -88,6 +99,32 @@ object Admin {
             Runs.deleteWhere { Runs.siteId eq siteId }
         }
         deleted > 0
+    }
+
+    /**
+     * For each site, fetch the most recent run summary (if any). One round-trip
+     * per site is fine for a small fleet; if it grows we can switch to a
+     * grouped query.
+     */
+    fun fleetSnapshot(): List<FleetSiteSnapshot> = transaction {
+        val sites = listSites()
+        sites.map { site ->
+            val latest = Runs.selectAll()
+                .where { Runs.siteId eq site.siteId }
+                .orderBy(Runs.ts, SortOrder.DESC)
+                .limit(1)
+                .firstOrNull()
+            FleetSiteSnapshot(
+                siteId = site.siteId,
+                label = site.label,
+                createdAt = site.createdAt,
+                lastRunAt = latest?.get(Runs.ts),
+                avgLatencyMs = latest?.get(Runs.avgLatencyMs),
+                lossPct = latest?.get(Runs.lossPct),
+                downMbps = latest?.get(Runs.downMbps),
+                upMbps = latest?.get(Runs.upMbps),
+            )
+        }
     }
 
     private fun randomToken(): String {

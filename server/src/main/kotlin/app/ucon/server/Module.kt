@@ -93,6 +93,10 @@ fun Application.module() {
     routing {
         get(Api.PATH_HEALTHZ) { call.respondText("ok") }
 
+        // Browser-friendly ops dashboard at /ops; uses ?t=$OPS_TOKEN so the page
+        // can be bookmarked. JSON sidecar at /ops/data.json.
+        opsDashboard(opsToken)
+
         authenticate("ops") {
             // Provision a new site. Body: { "label": "office-1" }. Response includes
             // the one-time plaintext token; subsequent calls cannot recover it.

@@ -139,15 +139,36 @@ The macOS menu bar / Windows tray header line shows just the numbers — `72↓ 
 
 ## Server API
 
-| Method | Path | Auth | Body |
-|---|---|---|---|
-| `GET` | `/healthz` | none | — |
-| `POST` | `/v1/stats` | bearer | `RunReport` JSON |
-| `GET` | `/v1/sites/{siteId}/stats?limit=` | bearer | — |
-| `GET` | `/v1/speedtest/download?bytes=N` | bearer | streamed random bytes (≤ 25 MB) |
-| `POST` | `/v1/speedtest/upload` | bearer | arbitrary body (≤ 25 MB) |
+### Ingest (per-site bearer)
 
-Tokens are stored hashed (Argon2id). Provisioning is a one-shot CLI: `./gradlew :server:run --args="admin add-site <label>"`.
+| Method | Path | Body |
+|---|---|---|
+| `GET` | `/healthz` | — (no auth) |
+| `POST` | `/v1/stats` | `RunReport` JSON |
+| `GET` | `/v1/sites/{siteId}/stats?limit=` | — |
+| `GET` | `/v1/speedtest/download?bytes=N` | streamed random bytes (≤ 25 MB) |
+| `POST` | `/v1/speedtest/upload` | arbitrary body (≤ 25 MB) |
+
+### Admin (bearer = `$OPS_TOKEN`)
+
+| Method | Path | Body |
+|---|---|---|
+| `GET` | `/ops` | HTML fleet dashboard (also accepts `?t=<token>` so the URL bookmarks) |
+| `GET` | `/ops/data.json` | latest snapshot per site (status pill, down/up, latency, loss, last-run ts) |
+| `POST` | `/v1/admin/sites` | `{ "label": "..." }` → returns `{ siteId, token }`. Token shown once. |
+| `GET` | `/v1/admin/sites` | list of provisioned sites (no tokens) |
+| `POST` | `/v1/admin/sites/{id}/rotate` | issue a fresh token; old token stops authenticating immediately |
+| `DELETE` | `/v1/admin/sites/{id}` | revoke and delete the site + its run history |
+
+`OPS_TOKEN` comes from the `OPS_TOKEN` environment variable or the `ucon.opsToken` config property. With it unset, every admin route returns 401.
+
+Tokens are stored hashed (Argon2id). Provisioning at first run is a one-shot CLI:
+
+```sh
+./gradlew :server:run --args="admin add-site office-1"
+```
+
+Subsequent provisioning, rotation, and revocation can run against a live server via the admin endpoints — no restart needed.
 
 ## Known constraints
 
@@ -175,9 +196,9 @@ When `MACOS_SIGN_IDENTITY` is set, the build also signs the bundled `uconnectivi
 - [x] iOS bearer token in Keychain (Security.framework via Swift bridge).
 - [x] Desktop bearer token in macOS Keychain (`security` CLI) / Windows DPAPI (JNA).
 - [x] Code-sign + notarize config for the macOS DMG (env-var driven; bundled Swift helper signed too).
-- [ ] Auto-start at login on desktop (launchd plist on macOS, Startup shortcut on Windows).
-- [ ] Server-side ops dashboard (currently you'd query SQLite directly).
-- [ ] Admin endpoint to revoke / rotate site tokens without restarting the server.
+- [x] Auto-start at login on desktop (launchd plist on macOS, Startup shortcut on Windows).
+- [x] Server-side ops dashboard at `/ops` (single-page HTML + `/ops/data.json`).
+- [x] Admin endpoints to revoke / rotate site tokens without restarting the server.
 
 ## Verification
 
