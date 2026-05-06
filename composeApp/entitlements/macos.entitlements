@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- The JVM uses JIT-compiled code; without this the hardened runtime kills it. -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+
+    <!-- Skiko / Compose Desktop loads native libraries at runtime. -->
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+
+    <!-- Required so the Swift status-bar helper (a child process) can be exec'd. -->
+    <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+    <true/>
+
+    <!-- Connectivity probes hit arbitrary HTTPS endpoints on the network. -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+</dict>
+</plist>

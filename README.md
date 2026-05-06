@@ -157,11 +157,24 @@ Tokens are stored hashed (Argon2id). Provisioning is a one-shot CLI: `./gradlew 
 - **iOS App Group needs a paid Apple Developer account on real devices.** The simulator works without (verified).
 - **Speed test against your own server costs bandwidth.** 5 MB × N clients × hourly adds up fast — budget accordingly, or leave the Cloudflare fallback enabled.
 
+## Code-signing the macOS DMG
+
+Local builds produce an unsigned DMG that works fine for development. For a release that passes Gatekeeper, set these before `./gradlew :composeApp:packageDmg`:
+
+| Variable | Purpose |
+|---|---|
+| `MACOS_SIGN_IDENTITY` | e.g. `"Developer ID Application: Jane Doe (ABCD12EFGH)"` |
+| `MACOS_SIGN_TEAM_ID` | the 10-char team id, e.g. `ABCD12EFGH` |
+| `MACOS_NOTARIZATION_USER` | Apple ID email used for notarization |
+| `MACOS_NOTARIZATION_PASS` | app-specific password from appleid.apple.com |
+
+When `MACOS_SIGN_IDENTITY` is set, the build also signs the bundled `uconnectivity-statusbar` helper with the same identity using `composeApp/entitlements/macos-helper.entitlements` (a minimal hardened-runtime profile). The main app is signed with the JIT/library-validation entitlements that Skiko + the helper-spawn workflow require — see `composeApp/entitlements/macos.entitlements`.
+
 ## Roadmap
 
-- [ ] Move bearer-token storage on iOS from `NSUserDefaults` to Keychain.
-- [ ] Move bearer-token storage on desktop from a flat file to Keychain (macOS) and DPAPI (Windows).
-- [ ] Code-sign + notarize the macOS DMG (and the bundled Swift helper).
+- [x] iOS bearer token in Keychain (Security.framework via Swift bridge).
+- [x] Desktop bearer token in macOS Keychain (`security` CLI) / Windows DPAPI (JNA).
+- [x] Code-sign + notarize config for the macOS DMG (env-var driven; bundled Swift helper signed too).
 - [ ] Auto-start at login on desktop (launchd plist on macOS, Startup shortcut on Windows).
 - [ ] Server-side ops dashboard (currently you'd query SQLite directly).
 - [ ] Admin endpoint to revoke / rotate site tokens without restarting the server.
