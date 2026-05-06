@@ -29,6 +29,7 @@ fun App(vm: AppViewModel) {
                     onUpdateSettings = { vm.updateSettings { _ -> it } },
                     onSetToken = vm::setToken,
                     onRunNow = vm::runNow,
+                    onSetAutoStart = vm::setAutoStart,
                 )
             }
         }

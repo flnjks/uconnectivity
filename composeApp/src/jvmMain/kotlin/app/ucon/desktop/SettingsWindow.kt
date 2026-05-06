@@ -38,6 +38,7 @@ fun SettingsWindow(vm: AppViewModel, onClose: () -> Unit) {
                     onUpdateSettings = { vm.updateSettings { _ -> it } },
                     onSetToken = vm::setToken,
                     onRunNow = vm::runNow,
+                    onSetAutoStart = vm::setAutoStart,
                 )
             }
         }

@@ -3,6 +3,7 @@ package app.ucon.ui
 import app.ucon.api.LastRunSummary
 import app.ucon.api.RunReport
 import app.ucon.config.AppSettings
+import app.ucon.config.AutoStartManager
 import app.ucon.config.SecureStore
 import app.ucon.config.SettingsStore
 import app.ucon.data.Run
@@ -32,6 +33,8 @@ data class UiState(
     val recent: List<Run> = emptyList(),
     val pendingUploads: Long = 0,
     val running: Boolean = false,
+    val autoStartSupported: Boolean = false,
+    val autoStartEnabled: Boolean = false,
 )
 
 /**
@@ -51,6 +54,7 @@ class AppViewModel(
     private val httpClient: HttpClient,
     private val surface: SurfaceBridge,
     val clientVersion: String,
+    private val autoStart: AutoStartManager = AutoStartManager(),
     parentScope: CoroutineScope? = null,
 ) {
     val scope: CoroutineScope = parentScope ?: CoroutineScope(Dispatchers.Default + SupervisorJob())
@@ -58,6 +62,7 @@ class AppViewModel(
     private val _settings = MutableStateFlow(settingsStore.load())
     private val _tokenPresent = MutableStateFlow(secureStore.getToken() != null)
     private val _running = MutableStateFlow(false)
+    private val _autoStartEnabled = MutableStateFlow(autoStart.isEnabled())
 
     val state: StateFlow<UiState> = combine(
         _settings,
@@ -66,6 +71,7 @@ class AppViewModel(
         repo.recent(10),
         repo.pendingCount(),
         _running,
+        _autoStartEnabled,
     ) { arr ->
         val latestRun = arr[2] as Run?
         val recentRuns = @Suppress("UNCHECKED_CAST") (arr[3] as List<Run>)
@@ -78,6 +84,8 @@ class AppViewModel(
             recent = recentRuns,
             pendingUploads = arr[4] as Long,
             running = arr[5] as Boolean,
+            autoStartSupported = autoStart.isSupported,
+            autoStartEnabled = arr[6] as Boolean,
         )
     }
         .onEach { ui ->
@@ -100,6 +108,12 @@ class AppViewModel(
     fun setToken(token: String?) {
         secureStore.setToken(token)
         _tokenPresent.value = token != null
+    }
+
+    fun setAutoStart(enabled: Boolean) {
+        if (!autoStart.isSupported) return
+        val ok = autoStart.setEnabled(enabled)
+        _autoStartEnabled.value = if (ok) enabled else autoStart.isEnabled()
     }
 
     /**

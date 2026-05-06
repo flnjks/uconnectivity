@@ -38,6 +38,7 @@ fun SettingsScreen(
     onUpdateSettings: (AppSettings) -> Unit,
     onSetToken: (String?) -> Unit,
     onRunNow: () -> Unit,
+    onSetAutoStart: (Boolean) -> Unit = {},
 ) {
     var siteId by remember(state.settings.siteId) { mutableStateOf(state.settings.siteId) }
     var serverBaseUrl by remember(state.settings.serverBaseUrl) { mutableStateOf(state.settings.serverBaseUrl) }
@@ -76,6 +77,12 @@ fun SettingsScreen(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Switch(checked = speedTest, onCheckedChange = { speedTest = it })
             Text("  Run speed test (uses ~10 MB per hour)", style = MaterialTheme.typography.bodyMedium)
+        }
+        if (state.autoStartSupported) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Switch(checked = state.autoStartEnabled, onCheckedChange = onSetAutoStart)
+                Text("  Launch at login", style = MaterialTheme.typography.bodyMedium)
+            }
         }
         Text(
             buildString {
