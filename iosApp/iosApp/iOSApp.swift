@@ -38,6 +38,12 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             WidgetCenter.shared.reloadAllTimelines()
         }
 
+        // Same pattern for Keychain access — Security.framework via Swift, the
+        // Kotlin SecureStore just calls these closures.
+        AppContainer_iosKt.keychainReader = { Keychain.read() }
+        AppContainer_iosKt.keychainWriter = { token in Keychain.write(token) }
+        AppContainer_iosKt.keychainDeleter = { Keychain.delete() }
+
         BGTaskScheduler.shared.register(
             forTaskWithIdentifier: REFRESH_TASK_ID,
             using: nil

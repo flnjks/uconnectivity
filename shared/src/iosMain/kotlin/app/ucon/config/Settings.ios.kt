@@ -23,20 +23,40 @@ actual class SettingsStore {
 }
 
 /**
- * Bearer token stored in NSUserDefaults for v1 simplicity.
+ * Bearer token in the iOS Keychain. The actual `Security.framework` calls live
+ * on the Swift side (`iosApp/iosApp/Keychain.swift`) — this class delegates
+ * through three function references that the consumer (composeApp/iosMain
+ * `AppContainer`) wires up at construction time.
  *
- * Production: move to Keychain via Security.framework. Keychain bindings from
- * Kotlin/Native require a handful of CFRelease dance; left as a follow-up.
+ * When the function references are no-ops (e.g. unit-test context with no
+ * Swift wiring), reads/writes transparently fall back to NSUserDefaults so
+ * the app keeps working.
+ *
+ * Includes a one-time migration from the v1 NSUserDefaults bearer-token key
+ * into the Keychain on first read.
  */
-actual class SecureStore {
+actual class SecureStore(
+    private val read: () -> String?,
+    private val write: (String) -> Unit,
+    private val delete: () -> Unit,
+) {
     private val defaults = NSUserDefaults.standardUserDefaults
-    private val key = "ucon_bearer_token"
 
-    actual fun getToken(): String? = defaults.stringForKey(key)?.takeIf { it.isNotBlank() }
+    actual fun getToken(): String? {
+        read()?.takeIf { it.isNotBlank() }?.let { return it }
+        // One-time migration from v1 NSUserDefaults storage.
+        val legacy = defaults.stringForKey(LEGACY_KEY)?.takeIf { it.isNotBlank() } ?: return null
+        write(legacy)
+        defaults.removeObjectForKey(LEGACY_KEY)
+        defaults.synchronize()
+        return legacy
+    }
 
     actual fun setToken(token: String?) {
-        if (token.isNullOrBlank()) defaults.removeObjectForKey(key)
-        else defaults.setObject(token, key)
-        defaults.synchronize()
+        if (token.isNullOrBlank()) delete() else write(token)
+    }
+
+    private companion object {
+        const val LEGACY_KEY = "ucon_bearer_token"
     }
 }

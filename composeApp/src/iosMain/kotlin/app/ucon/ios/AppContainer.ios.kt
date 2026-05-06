@@ -15,19 +15,28 @@ import app.ucon.ui.AppViewModel
 const val APP_GROUP_ID: String = "group.app.ucon.shared"
 
 /**
- * Set from Swift at app launch — Kotlin/Native has no WidgetKit cinterop, so
- * the actual `WidgetCenter.shared.reloadAllTimelines()` lives on the Swift side.
+ * Hooks set from Swift (`iosApp/iosApp/iOSApp.swift`) at app launch.
+ * Kotlin/Native lacks first-class WidgetKit and Security.framework interop,
+ * so we delegate the platform-specific bits to Swift.
  *
- * `iOSApp.swift` does:
- *   AppContainerKt.widgetReloader = { WidgetCenter.shared.reloadAllTimelines() }
+ *   AppContainer_iosKt.widgetReloader  = { WidgetCenter.shared.reloadAllTimelines() }
+ *   AppContainer_iosKt.keychainReader  = { Keychain.read() }
+ *   AppContainer_iosKt.keychainWriter  = { Keychain.write($0) }
+ *   AppContainer_iosKt.keychainDeleter = { Keychain.delete() }
  */
-@Suppress("unused")
-var widgetReloader: () -> Unit = {}
+@Suppress("unused") var widgetReloader: () -> Unit = {}
+@Suppress("unused") var keychainReader: () -> String? = { null }
+@Suppress("unused") var keychainWriter: (String) -> Unit = { }
+@Suppress("unused") var keychainDeleter: () -> Unit = {}
 
 object AppContainer {
     val httpClient = newHttpClient()
     val settingsStore = SettingsStore()
-    val secureStore = SecureStore()
+    val secureStore = SecureStore(
+        read = { keychainReader() },
+        write = { keychainWriter(it) },
+        delete = { keychainDeleter() },
+    )
     val repo = RunRepository(DriverFactory())
 
     private val probes = Probes(httpClient)
