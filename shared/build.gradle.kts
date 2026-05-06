@@ -54,6 +54,8 @@ kotlin {
         jvmMain.dependencies {
             implementation(libs.ktor.client.cio)
             implementation(libs.sqldelight.sqlite.driver)
+            implementation(libs.jna)
+            implementation(libs.jna.platform)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
